@@ -1,0 +1,11 @@
+.DS_Store
+**/.DS_Store
+
+# Arduino / PlatformIO build artifacts
+.pio/
+build/
+*.hex
+*.elf
+
+# Editor
+.vscode/
