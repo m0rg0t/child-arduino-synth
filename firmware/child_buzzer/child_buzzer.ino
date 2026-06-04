@@ -9,13 +9,7 @@ uint32_t pressCounter    = 1;  // 1-based; 0 stays reserved as the "not held" se
 
 int      lastFreqWritten = -1;  // -1 means noTone() is currently active
 
-// ---- Vibrato wobble shape: one sine cycle, 16 steps, scaled to +/-1000 ----
-const uint8_t VIBRATO_STEPS = 16;
-const int16_t VIBRATO_LUT[VIBRATO_STEPS] = {
-     0,   383,   707,   924,  1000,   924,   707,   383,
-     0,  -383,  -707,  -924, -1000,  -924,  -707,  -383
-};
-
+// ---- Vibrato runtime state (the shape/size live in config.h) ----
 bool     vibratoOn      = false;
 uint8_t  vibratoPhase   = 0;
 uint32_t lastVibratoMs  = 0;

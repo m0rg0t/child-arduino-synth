@@ -23,7 +23,7 @@ Tie every switch's "other leg" to a shared GND rail.
 |------------|------------|
 | S (signal) | D9 |
 | − (GND)    | GND |
-| middle (+) | leave unconnected (passive module; varies by board) |
+| centre pin (labelled `+` or `VCC`) | leave unconnected (passive module; varies by board) |
 
 ## Rotary angle sensor (potentiometer) — octave knob
 

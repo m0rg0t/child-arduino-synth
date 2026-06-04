@@ -23,7 +23,13 @@ const uint16_t COMBO_HOLD_MS = 600;  // hold both end keys this long to toggle v
 // ---- Vibrato ----
 const uint16_t VIBRATO_DEPTH_PERMILLE = 40;  // +/-4.0% pitch wobble
 const uint16_t VIBRATO_UPDATE_MS      = 10;  // how often to nudge the pitch
-// 16 LUT steps * 10 ms = 160 ms per cycle ~= 6.25 Hz wobble.
+// VIBRATO_STEPS * VIBRATO_UPDATE_MS = one wobble cycle (16 * 10 ms ~= 6.25 Hz).
+// VIBRATO_LUT is one sine cycle, scaled to +/-1000 (the wobble shape).
+const uint8_t VIBRATO_STEPS = 16;
+const int16_t VIBRATO_LUT[VIBRATO_STEPS] = {
+     0,   383,   707,   924,  1000,   924,   707,   383,
+     0,  -383,  -707,  -924, -1000,  -924,  -707,  -383
+};
 
 // ---- Debug ----
 #define DEBUG 0   // set to 1 to print state over Serial @115200
