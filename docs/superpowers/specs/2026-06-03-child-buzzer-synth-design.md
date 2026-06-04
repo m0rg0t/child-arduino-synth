@@ -2,15 +2,18 @@
 
 **Date:** 2026-06-03
 **Status:** Approved (design); implementation pending
+**v1 scope:** mini-piano + octave knob + vibrato. The line/aux audio jack is
+**deferred to a later version** — its design is preserved in the appendix.
 
 ## Overview
 
 A simple, sturdy mini-piano toy for a child. Seven keyboard switches play the
 notes of a one-octave C-major scale through a KY-006 passive buzzer. A rotary
 knob shifts the whole keyboard up or down by octaves (deep ↔ squeaky). A
-software "squeeze both ends" gesture toggles a vibrato (pitch-wobble) effect. A
-passive line/aux audio jack mirrors the buzzer signal so the toy can also be
-plugged into powered speakers or an amplifier.
+software "squeeze both ends" gesture toggles a vibrato (pitch-wobble) effect.
+
+A passive line/aux audio jack is planned for a later version (see appendix); v1
+ships with the on-board buzzer only.
 
 ## Goals
 
@@ -23,7 +26,7 @@ plugged into powered speakers or an amplifier.
 
 ## Hardware / Bill of Materials
 
-Exactly the parts already specified, plus passives for the optional jack:
+Exactly the parts already specified — nothing extra for v1:
 
 | Qty | Part | Notes |
 |----:|------|-------|
@@ -31,10 +34,8 @@ Exactly the parts already specified, plus passives for the optional jack:
 | 7 | Keyboard switches (mechanical key switches) | One per piano key |
 | 1 | Rotary angle sensor (analog potentiometer) | Octave knob — NOT an encoder |
 | 1 | KY-006 passive piezo buzzer | Driven by `tone()` square wave |
-| 1 | 3.5 mm audio jack (TRS) | Line/aux out (optional add-on) |
-| 1 | Coupling capacitor ~10 µF | DC-block for jack (+ toward Arduino) |
-| 1 | Series resistor ~1 kΩ | Current limit / attenuation for jack |
-| 1 | Shunt resistor ~10 kΩ | Defines DC level / divider for jack |
+
+The line/aux audio jack and its passives are listed in the appendix (deferred).
 
 ### Pin map
 
@@ -53,25 +54,8 @@ Exactly the parts already specified, plus passives for the optional jack:
 `INPUT_PULLUP` means each switch only needs to connect its pin to GND when
 pressed — no external resistors. A pressed key therefore reads `LOW`.
 
-### Audio jack (line/aux out)
-
-Hangs in parallel off the D9 tone signal — passive, no firmware involvement:
-
-```
-D9 ──[ ~1 kΩ ]──┬──[ 10 µF + ]──┬── Jack TIP ─┐
-                │   (+ to D9)    │             ├─ tied together (mono → both ears)
-              [10 kΩ]            └── Jack RING ┘
-                │
-               GND ───────────────────────────── Jack SLEEVE
-```
-
-- Coupling cap blocks the square wave's DC offset (no DC through the speaker).
-- Series + shunt resistors attenuate the 5 V swing toward a safe line level and
-  also gently low-pass the square wave (softer than the raw piezo).
-- Tip + ring tied so the mono tone reaches both channels.
-- Component values are starting points; raise the series resistor to reduce the
-  output level. Intended for **powered speakers / amp / aux-in**, which have
-  their own volume control.
+> **Audio jack:** deferred to a later version. The full circuit and parts list
+> live in the appendix so the v1 build stays focused on the buzzer.
 
 ## Behavior
 
@@ -163,11 +147,10 @@ a manual smoke test.
      vibrato; a single toggle per gesture (no flapping).
   5. With vibrato on, a held note audibly wobbles; with it off, the note is
      steady.
-  6. With a cable in the jack, powered speakers/amp reproduce the same tone
-     while the buzzer keeps playing.
 
 ## Out of scope (possible future work)
 
+- **Line/aux audio jack** — designed and parts-listed below; deferred to v2.
 - Polyphony (would need more than the single tone timer).
 - Selectable scales / instruments via the knob.
 - Hardware vibrato switch or auto-mute switched jack.
@@ -177,5 +160,36 @@ a manual smoke test.
 
 - Exact vibrato depth/rate (start ±4% / 6 Hz).
 - Octave band base/range (start C4 → B7, 4 bands).
-- Jack attenuation (start 1 kΩ series / 10 kΩ shunt / 10 µF cap).
 - Confirmation chirp pattern.
+
+## Appendix — Line/aux audio jack (deferred to v2)
+
+Passive add-on that hangs in parallel off the D9 tone signal — no firmware
+change. Lets the toy feed powered speakers / an amp / aux-in while the on-board
+buzzer keeps playing.
+
+```
+D9 ──[ ~1 kΩ ]──┬──[ 10 µF + ]──┬── Jack TIP ─┐
+                │   (+ to D9)    │             ├─ tied together (mono → both ears)
+              [10 kΩ]            └── Jack RING ┘
+                │
+               GND ───────────────────────────── Jack SLEEVE
+```
+
+- Coupling cap blocks the square wave's DC offset (no DC through the speaker).
+- Series + shunt resistors attenuate the 5 V swing toward a safe line level and
+  gently low-pass the square wave. Raise the series resistor to lower the level.
+- Tip + ring tied so the mono tone reaches both channels.
+
+### Parts to buy (jack add-on)
+
+| # | Part | Spec to search for | Qty | Notes |
+|---|------|--------------------|----:|-------|
+| 1 | 3.5 mm stereo panel-mount jack (TRS, female) | "3.5mm stereo panel mount jack threaded nut" / PJ-392 | 1 | Threaded barrel + nut to screw into the enclosure hole. Confirm thread matches the hole (commonly 6 mm). |
+| 2 | Coupling capacitor 10 µF | "10µF 25V electrolytic" (+ toward D9) **or** 1–10 µF film (non-polarized) | 1 | Rating ≥16 V. |
+| 3 | Series resistor 1 kΩ | "1kΩ 1/4W 5%" | 1 | Current limit / attenuation. |
+| 4 | Shunt resistor 10 kΩ | "10kΩ 1/4W 5%" | 1 | Sets DC level / divider to ground. |
+| 5 | Hookup wire + heat-shrink (optional) | "22 AWG hookup wire", "2mm heat shrink" | — | Tidy solder joints to the jack lugs. |
+
+Open tunable: jack attenuation — start 1 kΩ series / 10 kΩ shunt / 10 µF cap,
+adjust series R by ear.
