@@ -40,3 +40,8 @@ arduino-cli upload  --fqbn arduino:avr:nano -p /dev/cu.usbserial-XXXX firmware/c
 ## Roadmap
 
 - v2: line/aux audio output jack (design + parts list in the spec appendix).
+
+## License
+
+Released under the [MIT License](LICENSE) — free to use, modify, and build on
+with attribution.
