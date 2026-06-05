@@ -32,6 +32,6 @@ const int16_t VIBRATO_LUT[VIBRATO_STEPS] = {
 };
 
 // ---- Debug ----
-#define DEBUG 0   // set to 1 to print state over Serial @115200
+#define DEBUG 1   // set to 1 to print state over Serial @115200
 
 #endif // CONFIG_H
