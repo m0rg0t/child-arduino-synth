@@ -171,6 +171,7 @@ void loop() {
   }
 
   updateCombos(now);
+  now = millis();  // combo callbacks (chirps/announce) block; don't hand engines a stale tick
 
   uint8_t suppress = comboSuppressMask();
 
@@ -195,6 +196,8 @@ void loop() {
     default:
       break;
   }
+
+  if (freq == 0) freq = -1;  // engines may use 0 for "rest"; never hand 0 to tone()
 
   // Vibrato layers over every mode's output.
   if (freq > 0 && vibratoOn) freq = applyVibrato((uint16_t)freq);
