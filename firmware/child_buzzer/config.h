@@ -53,6 +53,33 @@ const int16_t VIBRATO_LUT[VIBRATO_STEPS] = {
      0,  -383,  -707,  -924, -1000,  -924,  -707,  -383
 };
 
+// ---- FX mode ----
+// Every effect is one parameter row driven by a shared sweep engine:
+//   FX_ONCE     sweep start->end once, then silence until re-press
+//   FX_LOOP     sweep start->end, snap back to start, repeat
+//   FX_PINGPONG bounce between start and end
+//   FX_RETRIG   like FX_ONCE but restarts after FX_RETRIG_GAP_MS while held
+enum FxBehavior : uint8_t { FX_ONCE, FX_LOOP, FX_PINGPONG, FX_RETRIG };
+
+struct FxDef {
+  uint16_t startHz, endHz;
+  uint16_t stepHz;     // size of each pitch step
+  uint8_t  stepMs;     // time between steps
+  uint8_t  behavior;   // FxBehavior
+};
+
+const uint16_t FX_RETRIG_GAP_MS = 180;  // pause between bird chirps
+
+const FxDef FX_DEFS[7] = {
+  {  600, 1200,    8,  10, FX_PINGPONG },  // key 0: siren — slow rise/fall wail
+  { 2500,  300,  110,   5, FX_ONCE     },  // key 1: laser zap — fast dive
+  {  250, 1800,   20,   8, FX_ONCE     },  // key 2: slide whistle — long rise
+  {  880, 1100,   44,   9, FX_PINGPONG },  // key 3: UFO warble — narrow fast wobble
+  {  800, 1000,  200, 250, FX_PINGPONG },  // key 4: alarm — hard two-tone
+  { 2000, 3200,  150,   6, FX_RETRIG   },  // key 5: bird — short rising chirps
+  {  400, 2200,  450,  35, FX_LOOP     },  // key 6: robot babble — coarse climbing steps
+};
+
 // ---- Debug ----
 #define DEBUG 1   // set to 1 to print state over Serial @115200
 

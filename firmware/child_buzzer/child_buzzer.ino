@@ -83,6 +83,67 @@ uint16_t applyVibrato(uint16_t baseFreq) {
   return (uint16_t)((int32_t)baseFreq * factor / 1000);
 }
 
+// ---- FX engine (MODE_FX) ----
+int8_t   fxKey = -1;       // key whose effect is running; -1 = idle
+uint16_t fxHz = 0;
+int8_t   fxDir = 1;        // +1 stepping up, -1 stepping down
+bool     fxDone = false;   // FX_ONCE finished / FX_RETRIG waiting out its gap
+uint32_t fxNextMs = 0;     // next step time; retrigger time while fxDone
+
+void fxStart(uint8_t key, uint32_t now) {
+  fxKey  = (int8_t)key;
+  fxHz   = FX_DEFS[key].startHz;
+  fxDir  = (FX_DEFS[key].endHz >= FX_DEFS[key].startHz) ? 1 : -1;
+  fxDone = false;
+  fxNextMs = now + FX_DEFS[key].stepMs;
+}
+
+// FX frequency for this tick (-1 = silence). activeKey is last-pressed-wins.
+int fxTick(int activeKey, uint32_t now) {
+  if (activeKey < 0) {       // releasing silences immediately
+    fxKey = -1;
+    return -1;
+  }
+  if (activeKey != fxKey) fxStart((uint8_t)activeKey, now);
+
+  const FxDef &d = FX_DEFS[fxKey];
+  if (fxDone) {
+    if (d.behavior == FX_RETRIG && now >= fxNextMs) {
+      fxStart((uint8_t)fxKey, now);
+    } else {
+      return -1;
+    }
+  }
+
+  if (now >= fxNextMs) {
+    fxNextMs = now + d.stepMs;
+    int32_t lo = min(d.startHz, d.endHz);
+    int32_t hi = max(d.startHz, d.endHz);
+    int32_t next = (int32_t)fxHz + (int32_t)fxDir * (int32_t)d.stepHz;
+    if (next < lo || next > hi) {
+      switch (d.behavior) {
+        case FX_ONCE:
+        case FX_RETRIG:
+          fxHz = d.endHz;
+          fxDone = true;
+          fxNextMs = now + FX_RETRIG_GAP_MS;  // only consulted by FX_RETRIG
+          break;
+        case FX_LOOP:
+          fxHz = d.startHz;
+          break;
+        case FX_PINGPONG:
+          fxDir = (int8_t)-fxDir;
+          next = (int32_t)fxHz + (int32_t)fxDir * (int32_t)d.stepHz;
+          fxHz = (uint16_t)constrain(next, lo, hi);
+          break;
+      }
+    } else {
+      fxHz = (uint16_t)next;
+    }
+  }
+  return (int)fxHz;
+}
+
 // Two quick beeps as toggle feedback. Briefly blocking (~220 ms) — fine for a
 // toy; a combo is being held so no note should be sounding anyway.
 void chirp(uint16_t hz1, uint16_t hz2) {
@@ -99,6 +160,8 @@ void togglePentatonic() { pentatonicOn = !pentatonicOn; chirp(CHIRP_HI_HZ, CHIRP
 // Stop all mode engines and drop transient state. Extended as engines land
 // (FX in Task 3, song in Task 4, echo in Task 5).
 void resetEngines() {
+  fxKey = -1;
+  fxDone = false;
 }
 
 // k+1 announce beeps. Blocking (<= ~520 ms) like chirp(); acceptable for a toy.
@@ -190,7 +253,9 @@ void loop() {
     case MODE_PIANO:
       if (note >= 0) freq = noteFrequency(note, band);
       break;
-    case MODE_FX:    // engine lands in Task 3
+    case MODE_FX:
+      freq = fxTick(note, now);
+      break;
     case MODE_SONG:  // engine lands in Task 4
     case MODE_ECHO:  // engine lands in Task 5
     default:
