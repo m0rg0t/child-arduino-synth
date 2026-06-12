@@ -27,8 +27,10 @@ arduino-cli monitor -p /dev/cu.usbserial-XXXX -c baudrate=115200          # read
 - IDE path: open the `.ino`, Board → Arduino Nano, Processor → ATmega328P, Upload.
 
 There is **no automated test harness** — verification is the serial `DEBUG`
-output plus the manual smoke-test checklist in
-`docs/superpowers/specs/2026-06-03-child-buzzer-synth-design.md`. `DEBUG` is a
+output plus the manual smoke-test checklists in
+`docs/superpowers/specs/2026-06-03-child-buzzer-synth-design.md` (v1) and
+`docs/superpowers/specs/2026-06-12-firmware-v2-modes-design.md` (v2 modes).
+`DEBUG` is a
 compile-time flag in `config.h` (currently `1`); when set it prints
 `mode/note/band/freq/penta/ec/ep/vib` over Serial @115200 every 200 ms.
 
@@ -37,11 +39,12 @@ compile-time flag in `config.h` (currently `1`); when set it prints
 Two files, by deliberate separation of concerns:
 
 - **`config.h`** — all *tunables* (pins, `NOTE_HZ` table, `OCTAVE_BANDS`,
-  debounce/combo timings, vibrato depth/rate/LUT, `DEBUG`). Re-tune the toy by
+  debounce/combo timings, vibrato depth/rate/LUT, the FX parameter rows
+  (`FX_DEFS`), the PROGMEM song tables, `DEBUG`). Re-tune the toy by
   editing here only; never put behavior in this header.
 - **`child_buzzer.ino`** — all *logic*. `loop()` is the orchestrator each tick:
-  debounce all keys → detect the combo → advance vibrato phase → pick the
-  active note → compute frequency → drive `tone()`/`noTone()`.
+  debounce all keys → detect combos → advance vibrato phase → dispatch to the
+  active mode engine → write `tone()`/`noTone()`.
 
 Constraints and patterns that span the code (read these before changing behavior):
 

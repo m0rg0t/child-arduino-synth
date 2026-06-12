@@ -33,8 +33,8 @@ arduino-cli upload  --fqbn arduino:avr:nano -p /dev/cu.usbserial-XXXX firmware/c
 ## How to play
 
 - **Press a key** → its note sounds while held (one note at a time; newest key wins).
-- **Turn the knob** → shifts all keys up/down by octaves (deep ↔ squeaky) in Piano mode;
-  controls tempo in Songs mode.
+- **Turn the knob** → shifts all keys up/down by octaves (deep ↔ squeaky) in Piano
+  and Echo modes; controls tempo in Songs mode.
 
 ## Modes & gestures
 
@@ -57,7 +57,8 @@ Modes (announced by beep count when you cycle into them):
    knob = tempo; press the same key again to stop.
 4. **Echo** — play something, pause 1.5 s, and the toy parrots it back.
 
-Vibrato and pentatonic work in every mode.
+Vibrato works in every mode; pentatonic changes the keyboard notes (Piano and
+Echo). The knob sets the octave in Piano and Echo, and the tempo in Songs.
 
 ## Roadmap
 
