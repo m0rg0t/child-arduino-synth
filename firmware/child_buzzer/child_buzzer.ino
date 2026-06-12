@@ -15,6 +15,10 @@ bool     pentatonicOn   = false;
 uint8_t  vibratoPhase   = 0;
 uint32_t lastVibratoMs  = 0;
 
+// ---- Play mode ----
+enum Mode : uint8_t { MODE_PIANO = 0, MODE_FX, MODE_SONG, MODE_ECHO, MODE_COUNT };
+uint8_t  mode = MODE_PIANO;
+
 void setup() {
   for (uint8_t i = 0; i < 7; i++) {
     pinMode(KEY_PINS[i], INPUT_PULLUP);
@@ -82,15 +86,35 @@ uint16_t applyVibrato(uint16_t baseFreq) {
 // Two quick beeps as toggle feedback. Briefly blocking (~220 ms) — fine for a
 // toy; a combo is being held so no note should be sounding anyway.
 void chirp(uint16_t hz1, uint16_t hz2) {
-  tone(BUZZER_PIN, hz1); delay(70);
-  noTone(BUZZER_PIN);    delay(40);
-  tone(BUZZER_PIN, hz2); delay(70);
-  noTone(BUZZER_PIN);    delay(40);
+  tone(BUZZER_PIN, hz1); delay(CHIRP_TONE_MS);
+  noTone(BUZZER_PIN);    delay(CHIRP_GAP_MS);
+  tone(BUZZER_PIN, hz2); delay(CHIRP_TONE_MS);
+  noTone(BUZZER_PIN);    delay(CHIRP_GAP_MS);
   lastFreqWritten = -1;              // force the next loop to re-assert the tone
 }
 
-void toggleVibrato()    { vibratoOn    = !vibratoOn;    chirp(1568, 2093); }  // rising
-void togglePentatonic() { pentatonicOn = !pentatonicOn; chirp(2093, 1568); }  // falling
+void toggleVibrato()    { vibratoOn    = !vibratoOn;    chirp(CHIRP_LO_HZ, CHIRP_HI_HZ); }  // rising
+void togglePentatonic() { pentatonicOn = !pentatonicOn; chirp(CHIRP_HI_HZ, CHIRP_LO_HZ); }  // falling
+
+// Stop all mode engines and drop transient state. Extended as engines land
+// (FX in Task 3, song in Task 4, echo in Task 5).
+void resetEngines() {
+}
+
+// k+1 announce beeps. Blocking (<= ~520 ms) like chirp(); acceptable for a toy.
+void announceMode() {
+  for (uint8_t i = 0; i <= mode; i++) {
+    tone(BUZZER_PIN, MODE_BEEP_HZ); delay(MODE_BEEP_MS);
+    noTone(BUZZER_PIN);             delay(MODE_BEEP_GAP_MS);
+  }
+  lastFreqWritten = -1;
+}
+
+void cycleMode() {
+  mode = (uint8_t)((mode + 1) % MODE_COUNT);
+  resetEngines();
+  announceMode();
+}
 
 // ---- Combo gestures (hold two keys COMBO_HOLD_MS to fire once per hold) ----
 struct ComboState {
@@ -101,10 +125,11 @@ struct ComboState {
   uint32_t startMs;
 };
 
-const uint8_t COMBO_COUNT = 2;
+const uint8_t COMBO_COUNT = 3;
 ComboState combos[COMBO_COUNT] = {
   { COMBO_VIBRATO_A, COMBO_VIBRATO_B, toggleVibrato,    false, false, 0 },
   { COMBO_PENTA_A,   COMBO_PENTA_B,   togglePentatonic, false, false, 0 },
+  { COMBO_MODE_A,    COMBO_MODE_B,    cycleMode,        false, false, 0 },
 };
 
 void updateCombos(uint32_t now) {
@@ -131,7 +156,7 @@ void updateCombos(uint32_t now) {
 uint8_t comboSuppressMask() {
   uint8_t mask = 0;
   for (uint8_t c = 0; c < COMBO_COUNT; c++) {
-    if (keyHeld[combos[c].keyA] && keyHeld[combos[c].keyB]) {
+    if (combos[c].active) {
       mask |= (uint8_t)((1 << combos[c].keyA) | (1 << combos[c].keyB));
     }
   }
@@ -147,23 +172,32 @@ void loop() {
 
   updateCombos(now);
 
+  uint8_t suppress = comboSuppressMask();
+
   // Advance the vibrato wobble on its own tick.
   if (vibratoOn && (now - lastVibratoMs >= VIBRATO_UPDATE_MS)) {
     lastVibratoMs = now;
     vibratoPhase = (vibratoPhase + 1) % VIBRATO_STEPS;
   }
 
-  uint8_t suppress = comboSuppressMask();
   int note = activeNote(suppress);
   uint8_t band = readOctaveBand();
 
-  int freq;
-  if (note < 0) {
-    freq = -1;
-  } else {
-    uint16_t base = noteFrequency(note, band);
-    freq = vibratoOn ? applyVibrato(base) : base;
+  // Each mode engine answers one question: what frequency right now (-1 = silence)?
+  int freq = -1;
+  switch (mode) {
+    case MODE_PIANO:
+      if (note >= 0) freq = noteFrequency(note, band);
+      break;
+    case MODE_FX:    // engine lands in Task 3
+    case MODE_SONG:  // engine lands in Task 4
+    case MODE_ECHO:  // engine lands in Task 5
+    default:
+      break;
   }
+
+  // Vibrato layers over every mode's output.
+  if (freq > 0 && vibratoOn) freq = applyVibrato((uint16_t)freq);
 
   if (freq != lastFreqWritten) {
     if (freq < 0) {
@@ -178,6 +212,8 @@ void loop() {
   static uint32_t lastDbg = 0;
   if (now - lastDbg >= 200) {
     lastDbg = now;
+    Serial.print(F("mode=")); Serial.print(mode);
+    Serial.print(F(" "));
     Serial.print(F("note=")); Serial.print(note);
     Serial.print(F(" band=")); Serial.print(band);
     Serial.print(F(" freq=")); Serial.print(freq);

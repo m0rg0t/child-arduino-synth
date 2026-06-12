@@ -22,12 +22,25 @@ const uint16_t NOTE_HZ_PENTA[7] = { 262, 294, 330, 392, 440, 523, 587 };
 
 // ---- Timing ----
 const uint16_t DEBOUNCE_MS   = 5;    // per-key debounce window
-const uint16_t COMBO_HOLD_MS = 600;  // hold both end keys this long to toggle vibrato
+const uint16_t COMBO_HOLD_MS = 600;  // hold a combo key pair this long to fire its gesture
 
 // Two-key hold gestures (hold COMBO_HOLD_MS to fire once per hold).
 // Symmetric pairs are the easiest two-finger spans for small hands.
 const uint8_t COMBO_VIBRATO_A = 0, COMBO_VIBRATO_B = 6;  // ends: toggle vibrato
 const uint8_t COMBO_PENTA_A   = 1, COMBO_PENTA_B   = 5;  // toggle pentatonic
+const uint8_t COMBO_MODE_A    = 2, COMBO_MODE_B    = 4;  // cycle play mode
+
+// ---- Modes ----
+// Entering mode k is announced with k+1 beeps (1 = piano .. 4 = echo).
+const uint16_t MODE_BEEP_HZ     = 1047;  // C6
+const uint8_t  MODE_BEEP_MS     = 60;
+const uint8_t  MODE_BEEP_GAP_MS = 70;
+
+// Toggle-feedback chirps (vibrato = rising, pentatonic = falling).
+const uint16_t CHIRP_LO_HZ  = 1568;  // ~G6
+const uint16_t CHIRP_HI_HZ  = 2093;  // ~C7
+const uint8_t  CHIRP_TONE_MS = 70;
+const uint8_t  CHIRP_GAP_MS  = 40;
 
 // ---- Vibrato ----
 const uint16_t VIBRATO_DEPTH_PERMILLE = 40;  // +/-4.0% pitch wobble
