@@ -292,7 +292,7 @@ void echoStartPlayback(uint32_t now) {
 
 // Echo frequency for this tick (-1 = silence). Records live piano playing;
 // after ECHO_SILENCE_MS of quiet it parrots the phrase back, then clears.
-int echoTick(int note, uint8_t band, uint32_t now) {
+int echoTick(int note, uint8_t band, uint8_t suppress, uint32_t now) {
   if (echoPlaying) {
     if (note >= 0) {
       echoReset();  // kid interrupted the parrot; fall through to record
@@ -308,6 +308,9 @@ int echoTick(int note, uint8_t band, uint32_t now) {
             echoReset();
             return -1;
           }
+          // Even a 0-length gap yields one silent tick — that re-articulates
+          // repeated notes past the lastFreqWritten dirty flag. Don't
+          // optimize it away.
           echoInGap = true;
           echoPhaseStartMs = now;
           echoPhaseLenMs = echoBuf[echoPos].gapMs;
@@ -321,7 +324,16 @@ int echoTick(int note, uint8_t band, uint32_t now) {
 
   // Recording: live piano behavior, transitions logged.
   if (note != echoLiveNote) {
-    if (echoLiveNote >= 0) echoCloseNote(now);
+    if (echoLiveNote >= 0) {
+      if (keyHeld[echoLiveNote] && ((suppress >> echoLiveNote) & 1)) {
+        // Live note vanished because its key joined a combo: drop it rather
+        // than record the gesture's first key as a junk event.
+        echoLiveNote = -1;
+        echoSilenceStartMs = now;
+      } else {
+        echoCloseNote(now);
+      }
+    }
     if (note >= 0) echoOpenNote(note, band, now);
   }
   if (note < 0) {
@@ -452,7 +464,7 @@ void loop() {
       freq = songTick(now, suppress);
       break;
     case MODE_ECHO:
-      freq = echoTick(note, band, now);
+      freq = echoTick(note, band, suppress, now);
       break;
     default:
       break;
@@ -482,6 +494,8 @@ void loop() {
     Serial.print(F(" band=")); Serial.print(band);
     Serial.print(F(" freq=")); Serial.print(freq);
     Serial.print(F(" penta=")); Serial.print(pentatonicOn ? 1 : 0);
+    Serial.print(F(" ec=")); Serial.print(echoCount);
+    Serial.print(F(" ep=")); Serial.print(echoPlaying ? 1 : 0);
     Serial.print(F(" vib=")); Serial.println(vibratoOn ? 1 : 0);
   }
 #endif
