@@ -151,6 +151,7 @@ uint16_t songFreq = 0;            // 0 = rest
 uint32_t songPhaseStartMs = 0;    // when the current sound/gap phase began
 uint32_t songPhaseLenMs = 0;      // length of the current phase
 uint32_t songLastStamp = 0;       // pressCounter baseline for new-press detection
+uint32_t songStartOrder = 0;      // press stamp that started the current song
 
 // Newest key pressed since the last call (-1 = none); suppressed keys ignored.
 // Presses on suppressed (combo) keys are consumed so they can't fire later.
@@ -200,6 +201,7 @@ void songLoadEvent(uint32_t now) {
 
 void songStart(uint8_t key, uint32_t now) {
   songKey = (int8_t)key;
+  songStartOrder = pressOrder[key];
   songPos = 0;
   songLoadEvent(now);
 }
@@ -214,6 +216,12 @@ int songTick(uint32_t now, uint8_t suppressMask) {
   if (pressed >= 0) {
     if (pressed == songKey) songStop();
     else songStart((uint8_t)pressed, now);
+  }
+  // A song started by the first finger of a combo gesture is cancelled once
+  // the gesture engages (that same press becomes suppressed).
+  if (songKey >= 0 && ((suppressMask >> songKey) & 1) &&
+      pressOrder[songKey] == songStartOrder) {
+    songStop();
   }
   if (songKey < 0) return -1;
 
@@ -347,6 +355,7 @@ int echoTick(int note, uint8_t band, uint8_t suppress, uint32_t now) {
 
 // Two quick beeps as toggle feedback. Briefly blocking (~220 ms) — fine for a
 // toy; recovery is via lastFreqWritten = -1 below (a playing song resumes).
+// Blocking time is not credited to song/echo phase timers — a playing melody skips ~220 ms.
 void chirp(uint16_t hz1, uint16_t hz2) {
   tone(BUZZER_PIN, hz1); delay(CHIRP_TONE_MS);
   noTone(BUZZER_PIN);    delay(CHIRP_GAP_MS);
@@ -358,8 +367,7 @@ void chirp(uint16_t hz1, uint16_t hz2) {
 void toggleVibrato()    { vibratoOn    = !vibratoOn;    chirp(CHIRP_LO_HZ, CHIRP_HI_HZ); }  // rising
 void togglePentatonic() { pentatonicOn = !pentatonicOn; chirp(CHIRP_HI_HZ, CHIRP_LO_HZ); }  // falling
 
-// Stop all mode engines and drop transient state. Extended as engines land
-// (FX in Task 3, song in Task 4, echo in Task 5).
+// Stop all mode engines and drop transient state (called on every mode change).
 void resetEngines() {
   fxKey = -1;
   fxDone = false;
