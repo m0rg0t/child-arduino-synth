@@ -235,6 +235,104 @@ int songTick(uint32_t now, uint8_t suppressMask) {
   return (int)songFreq;
 }
 
+// ---- Echo recorder/player (MODE_ECHO) ----
+struct EchoEvent {
+  uint8_t  noteAndBand;  // low 3 bits = note index, bits 3-4 = octave band
+  uint16_t durationMs;
+  uint16_t gapMs;        // silence before this note
+};
+
+EchoEvent echoBuf[ECHO_MAX_EVENTS];
+uint8_t   echoCount = 0;
+bool      echoPlaying = false;
+uint8_t   echoPos = 0;
+bool      echoInGap = false;
+uint32_t  echoPhaseStartMs = 0;     // when the current sound/gap phase began
+uint32_t  echoPhaseLenMs = 0;       // length of the current phase
+int8_t    echoLiveNote = -1;        // note currently sounding while recording
+uint8_t   echoLiveBand = 0;
+uint16_t  echoPendingGapMs = 0;     // gap captured when the live note opened
+uint32_t  echoNoteStartMs = 0;
+uint32_t  echoSilenceStartMs = 0;   // when the last note ended
+
+void echoReset() {
+  echoCount = 0;
+  echoPlaying = false;
+  echoLiveNote = -1;
+}
+
+void echoOpenNote(int note, uint8_t band, uint32_t now) {
+  uint32_t gap = (echoCount == 0) ? 0 : (now - echoSilenceStartMs);
+  echoPendingGapMs = (uint16_t)min(gap, (uint32_t)65535);
+  echoLiveNote = (int8_t)note;
+  echoLiveBand = band;
+  echoNoteStartMs = now;
+}
+
+void echoCloseNote(uint32_t now) {
+  if (echoLiveNote < 0) return;
+  if (echoCount < ECHO_MAX_EVENTS) {  // buffer full: drop, keep what fits
+    uint32_t dur = now - echoNoteStartMs;
+    echoBuf[echoCount].noteAndBand = (uint8_t)(echoLiveNote | (echoLiveBand << 3));
+    echoBuf[echoCount].durationMs = (uint16_t)min(dur, (uint32_t)65535);
+    echoBuf[echoCount].gapMs = echoPendingGapMs;
+    echoCount++;
+  }
+  echoLiveNote = -1;
+  echoSilenceStartMs = now;
+}
+
+void echoStartPlayback(uint32_t now) {
+  echoPlaying = true;
+  echoPos = 0;
+  echoInGap = false;
+  echoPhaseStartMs = now;
+  echoPhaseLenMs = echoBuf[0].durationMs;
+}
+
+// Echo frequency for this tick (-1 = silence). Records live piano playing;
+// after ECHO_SILENCE_MS of quiet it parrots the phrase back, then clears.
+int echoTick(int note, uint8_t band, uint32_t now) {
+  if (echoPlaying) {
+    if (note >= 0) {
+      echoReset();  // kid interrupted the parrot; fall through to record
+    } else {
+      if (now - echoPhaseStartMs >= echoPhaseLenMs) {
+        if (echoInGap) {
+          echoInGap = false;
+          echoPhaseStartMs = now;
+          echoPhaseLenMs = echoBuf[echoPos].durationMs;
+        } else {
+          echoPos++;
+          if (echoPos >= echoCount) {
+            echoReset();
+            return -1;
+          }
+          echoInGap = true;
+          echoPhaseStartMs = now;
+          echoPhaseLenMs = echoBuf[echoPos].gapMs;
+        }
+      }
+      if (echoInGap) return -1;
+      uint8_t nb = echoBuf[echoPos].noteAndBand;
+      return (int)noteFrequency(nb & 0x07, (nb >> 3) & 0x03);
+    }
+  }
+
+  // Recording: live piano behavior, transitions logged.
+  if (note != echoLiveNote) {
+    if (echoLiveNote >= 0) echoCloseNote(now);
+    if (note >= 0) echoOpenNote(note, band, now);
+  }
+  if (note < 0) {
+    if (echoCount > 0 && (now - echoSilenceStartMs >= ECHO_SILENCE_MS)) {
+      echoStartPlayback(now);
+    }
+    return -1;
+  }
+  return (int)noteFrequency(note, band);
+}
+
 // Two quick beeps as toggle feedback. Briefly blocking (~220 ms) — fine for a
 // toy; recovery is via lastFreqWritten = -1 below (a playing song resumes).
 void chirp(uint16_t hz1, uint16_t hz2) {
@@ -255,6 +353,7 @@ void resetEngines() {
   fxDone = false;
   songStop();
   songLastStamp = pressCounter;  // ignore presses from before the mode switch
+  echoReset();
 }
 
 // k+1 announce beeps. Blocking (<= ~520 ms) like chirp(); acceptable for a toy.
@@ -352,7 +451,9 @@ void loop() {
     case MODE_SONG:
       freq = songTick(now, suppress);
       break;
-    case MODE_ECHO:  // engine lands in Task 5
+    case MODE_ECHO:
+      freq = echoTick(note, band, now);
+      break;
     default:
       break;
   }

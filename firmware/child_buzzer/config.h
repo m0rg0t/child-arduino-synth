@@ -164,6 +164,10 @@ const uint8_t SONG_LEN[7] = {  // number of {note, duration} pairs per song
   sizeof(SONG_ROCKYOU) / 2,
 };
 
+// ---- Echo mode ----
+const uint8_t  ECHO_MAX_EVENTS = 32;     // ~160 B of SRAM (5 B per event)
+const uint16_t ECHO_SILENCE_MS = 1500;   // quiet time before the parrot replies
+
 // ---- Debug ----
 #define DEBUG 1   // set to 1 to print state over Serial @115200
 
