@@ -33,9 +33,31 @@ arduino-cli upload  --fqbn arduino:avr:nano -p /dev/cu.usbserial-XXXX firmware/c
 ## How to play
 
 - **Press a key** → its note sounds while held (one note at a time; newest key wins).
-- **Turn the knob** → moves all keys up/down by octaves (deep ↔ squeaky).
-- **Hold lowest + highest keys together (~0.6 s)** → toggles vibrato on/off
-  (two-beep chirp confirms).
+- **Turn the knob** → shifts all keys up/down by octaves (deep ↔ squeaky) in Piano mode;
+  controls tempo in Songs mode.
+
+## Modes & gestures
+
+Hold two keys for ~0.6 s to trigger a gesture (the held keys stay silent during the hold):
+
+| Keys       | Gesture                | Feedback        |
+|------------|------------------------|-----------------|
+| 1 + 7 (ends) | toggle vibrato       | rising chirp    |
+| 2 + 6      | toggle pentatonic scale | falling chirp  |
+| 3 + 5      | next mode              | 1–4 beeps = current mode |
+
+Modes (announced by beep count when you cycle into them):
+
+1. **Piano** — the classic 7-key C-major piano; knob = octave.
+2. **FX** — each key is a sound effect: siren, laser, slide whistle, UFO,
+   alarm, bird, robot.
+3. **Songs** — each key plays a melody (key 1 = Twinkle Twinkle Little Star,
+   key 2 = Mary Had a Little Lamb, key 3 = Ode to Joy, key 4 = London Bridge,
+   key 5 = Frère Jacques, key 6 = Smoke on the Water, key 7 = We Will Rock You);
+   knob = tempo; press the same key again to stop.
+4. **Echo** — play something, pause 1.5 s, and the toy parrots it back.
+
+Vibrato and pentatonic work in every mode.
 
 ## Roadmap
 
