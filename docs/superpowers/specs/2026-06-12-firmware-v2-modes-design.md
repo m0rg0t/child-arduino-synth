@@ -1,7 +1,7 @@
 # Child-buzzer firmware v2 — play modes
 
 **Date:** 2026-06-12
-**Status:** Approved design
+**Status:** Implemented & verified on hardware (smoke test passed 2026-06-12; build 8138 B flash / 667 B SRAM)
 **Builds on:** `docs/superpowers/specs/2026-06-03-child-buzzer-synth-design.md` (v1)
 
 ## Goal

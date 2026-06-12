@@ -43,6 +43,15 @@ share one common GND.
 ## How to play
 
 - Press a key → its note sounds while held (one note at a time, newest wins).
-- Turn the knob → shifts all keys across 4 octaves (deep ↔ squeaky).
-- Hold the lowest + highest keys together (~0.6 s) → toggles vibrato; a two-beep
-  chirp confirms.
+- Turn the knob → shifts all keys across 4 octaves (deep ↔ squeaky) in Piano
+  and Echo modes; sets the tempo in Songs mode.
+- Two-key hold gestures (~0.6 s): lowest + highest → vibrato (rising chirp);
+  2nd + 6th → pentatonic scale (falling chirp); 3rd + 5th → next mode,
+  announced by 1–4 beeps (Piano / FX / Songs / Echo). Full mode guide is in
+  README.md ("Modes & gestures").
+
+## Troubleshooting
+
+- Keys register (serial `DEBUG` shows `note`/`freq`) but no sound → check the
+  KY-006 S and − connections; the joint is known to go intermittent after
+  enclosure reassembly. Consider soldering + strain relief.

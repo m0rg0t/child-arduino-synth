@@ -26,8 +26,9 @@ Design spec: `docs/superpowers/specs/`. Wiring: `WIRING.md`. Enclosure models:
 ```bash
 arduino-cli core install arduino:avr
 arduino-cli compile --fqbn arduino:avr:nano firmware/child_buzzer
-arduino-cli upload  --fqbn arduino:avr:nano -p /dev/cu.usbserial-XXXX firmware/child_buzzer
-# Old-bootloader clones: add :cpu=atmega328old to the FQBN.
+arduino-cli upload  --fqbn arduino:avr:nano:cpu=atmega328old -p /dev/cu.usbserial-XXXX firmware/child_buzzer
+# Genuine Nanos (new bootloader): drop the :cpu=atmega328old suffix. Clone
+# boards hang in avrdude sync without it.
 ```
 
 ## How to play
