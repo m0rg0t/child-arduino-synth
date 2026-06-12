@@ -16,9 +16,18 @@ const uint8_t KNOB_PIN    = A0;    // rotary angle sensor (potentiometer) wiper
 const uint16_t NOTE_HZ[7]  = { 262, 294, 330, 349, 392, 440, 494 };
 const uint8_t  OCTAVE_BANDS = 4;   // knob selects band 0..3  (C4 .. ~B7)
 
+// Alternate 7-key mapping: C-major pentatonic spilling into the next octave,
+// so random mashing always sounds consonant. Index 0..6 = C D E G A C' D'.
+const uint16_t NOTE_HZ_PENTA[7] = { 262, 294, 330, 392, 440, 523, 587 };
+
 // ---- Timing ----
 const uint16_t DEBOUNCE_MS   = 5;    // per-key debounce window
 const uint16_t COMBO_HOLD_MS = 600;  // hold both end keys this long to toggle vibrato
+
+// Two-key hold gestures (hold COMBO_HOLD_MS to fire once per hold).
+// Symmetric pairs are the easiest two-finger spans for small hands.
+const uint8_t COMBO_VIBRATO_A = 0, COMBO_VIBRATO_B = 6;  // ends: toggle vibrato
+const uint8_t COMBO_PENTA_A   = 1, COMBO_PENTA_B   = 5;  // toggle pentatonic
 
 // ---- Vibrato ----
 const uint16_t VIBRATO_DEPTH_PERMILLE = 40;  // +/-4.0% pitch wobble

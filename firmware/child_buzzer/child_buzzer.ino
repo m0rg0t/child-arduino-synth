@@ -11,13 +11,9 @@ int      lastFreqWritten = -1;  // -1 means noTone() is currently active
 
 // ---- Vibrato runtime state (the shape/size live in config.h) ----
 bool     vibratoOn      = false;
+bool     pentatonicOn   = false;
 uint8_t  vibratoPhase   = 0;
 uint32_t lastVibratoMs  = 0;
-
-// ---- Combo (both end keys held) toggle state ----
-bool     comboActive    = false;  // both ends currently held (candidate window)
-bool     comboFired     = false;  // already toggled during this hold
-uint32_t comboStartMs   = 0;
 
 void setup() {
   for (uint8_t i = 0; i < 7; i++) {
@@ -43,13 +39,13 @@ void debounceKey(uint8_t i, uint32_t now) {
 }
 
 // Most-recently-pressed key still held (0..6), or -1 if none.
-// When suppressEnds is true, keys 0 and 6 are ignored (used during the combo).
-int activeNote(bool suppressEnds) {
+// Keys whose bit is set in suppressMask are ignored (held combo pairs).
+int activeNote(uint8_t suppressMask) {
   int best = -1;
   uint32_t bestOrder = 0;
   for (uint8_t i = 0; i < 7; i++) {
     if (!keyHeld[i]) continue;
-    if (suppressEnds && (i == 0 || i == 6)) continue;
+    if ((suppressMask >> i) & 1) continue;
     if (pressOrder[i] > bestOrder) {
       bestOrder = pressOrder[i];
       best = i;
@@ -59,8 +55,10 @@ int activeNote(bool suppressEnds) {
 }
 
 // Frequency for a note index at an octave band (doubling per band; exact).
+// The pentatonic toggle swaps which 7-entry table the keys map to.
 uint16_t noteFrequency(int noteIndex, uint8_t band) {
-  return (uint16_t)(NOTE_HZ[noteIndex] << band);
+  const uint16_t *table = pentatonicOn ? NOTE_HZ_PENTA : NOTE_HZ;
+  return (uint16_t)(table[noteIndex] << band);
 }
 
 // Knob (0..1023) -> octave band 0..OCTAVE_BANDS-1.
@@ -81,34 +79,63 @@ uint16_t applyVibrato(uint16_t baseFreq) {
   return (uint16_t)((int32_t)baseFreq * factor / 1000);
 }
 
-// Two quick beeps confirming a vibrato toggle. Briefly blocking (~220 ms) — fine
-// for a toy; the combo is being held so no note should be sounding anyway.
-void chirp() {
-  tone(BUZZER_PIN, 1568); delay(70);   // ~G6
-  noTone(BUZZER_PIN);     delay(40);
-  tone(BUZZER_PIN, 2093); delay(70);   // ~C7
-  noTone(BUZZER_PIN);     delay(40);
-  lastFreqWritten = -1;                // force the next loop to re-assert the tone
+// Two quick beeps as toggle feedback. Briefly blocking (~220 ms) — fine for a
+// toy; a combo is being held so no note should be sounding anyway.
+void chirp(uint16_t hz1, uint16_t hz2) {
+  tone(BUZZER_PIN, hz1); delay(70);
+  noTone(BUZZER_PIN);    delay(40);
+  tone(BUZZER_PIN, hz2); delay(70);
+  noTone(BUZZER_PIN);    delay(40);
+  lastFreqWritten = -1;              // force the next loop to re-assert the tone
 }
 
-// Detect the "both end keys held for COMBO_HOLD_MS" gesture and toggle vibrato
-// exactly once per hold (edge-triggered).
-void updateComboToggle(uint32_t now) {
-  bool bothEnds = keyHeld[0] && keyHeld[6];
-  if (bothEnds) {
-    if (!comboActive) {
-      comboActive = true;
-      comboFired = false;
-      comboStartMs = now;
-    } else if (!comboFired && (now - comboStartMs >= COMBO_HOLD_MS)) {
-      comboFired = true;
-      vibratoOn = !vibratoOn;
-      chirp();
+void toggleVibrato()    { vibratoOn    = !vibratoOn;    chirp(1568, 2093); }  // rising
+void togglePentatonic() { pentatonicOn = !pentatonicOn; chirp(2093, 1568); }  // falling
+
+// ---- Combo gestures (hold two keys COMBO_HOLD_MS to fire once per hold) ----
+struct ComboState {
+  uint8_t keyA, keyB;
+  void (*onFire)();
+  bool active;        // both keys currently held (candidate window)
+  bool fired;         // already fired during this hold
+  uint32_t startMs;
+};
+
+const uint8_t COMBO_COUNT = 2;
+ComboState combos[COMBO_COUNT] = {
+  { COMBO_VIBRATO_A, COMBO_VIBRATO_B, toggleVibrato,    false, false, 0 },
+  { COMBO_PENTA_A,   COMBO_PENTA_B,   togglePentatonic, false, false, 0 },
+};
+
+void updateCombos(uint32_t now) {
+  for (uint8_t c = 0; c < COMBO_COUNT; c++) {
+    ComboState &s = combos[c];
+    bool both = keyHeld[s.keyA] && keyHeld[s.keyB];
+    if (both) {
+      if (!s.active) {
+        s.active = true;
+        s.fired = false;
+        s.startMs = now;
+      } else if (!s.fired && now - s.startMs >= COMBO_HOLD_MS) {
+        s.fired = true;
+        s.onFire();
+      }
+    } else {
+      s.active = false;
+      s.fired = false;
     }
-  } else {
-    comboActive = false;
-    comboFired = false;
   }
+}
+
+// Bitmask of keys to mute because they are part of a currently-held combo.
+uint8_t comboSuppressMask() {
+  uint8_t mask = 0;
+  for (uint8_t c = 0; c < COMBO_COUNT; c++) {
+    if (keyHeld[combos[c].keyA] && keyHeld[combos[c].keyB]) {
+      mask |= (uint8_t)((1 << combos[c].keyA) | (1 << combos[c].keyB));
+    }
+  }
+  return mask;
 }
 
 void loop() {
@@ -118,7 +145,7 @@ void loop() {
     debounceKey(i, now);
   }
 
-  updateComboToggle(now);
+  updateCombos(now);
 
   // Advance the vibrato wobble on its own tick.
   if (vibratoOn && (now - lastVibratoMs >= VIBRATO_UPDATE_MS)) {
@@ -126,8 +153,8 @@ void loop() {
     vibratoPhase = (vibratoPhase + 1) % VIBRATO_STEPS;
   }
 
-  bool suppressEnds = (keyHeld[0] && keyHeld[6]);
-  int note = activeNote(suppressEnds);
+  uint8_t suppress = comboSuppressMask();
+  int note = activeNote(suppress);
   uint8_t band = readOctaveBand();
 
   int freq;
@@ -154,6 +181,7 @@ void loop() {
     Serial.print(F("note=")); Serial.print(note);
     Serial.print(F(" band=")); Serial.print(band);
     Serial.print(F(" freq=")); Serial.print(freq);
+    Serial.print(F(" penta=")); Serial.print(pentatonicOn ? 1 : 0);
     Serial.print(F(" vib=")); Serial.println(vibratoOn ? 1 : 0);
   }
 #endif
