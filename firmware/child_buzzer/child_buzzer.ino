@@ -153,17 +153,21 @@ uint32_t songPhaseLenMs = 0;      // length of the current phase
 uint32_t songLastStamp = 0;       // pressCounter baseline for new-press detection
 
 // Newest key pressed since the last call (-1 = none); suppressed keys ignored.
+// Presses on suppressed (combo) keys are consumed so they can't fire later.
 int songTakeNewPress(uint8_t suppressMask) {
   int best = -1;
   uint32_t bestOrder = songLastStamp;
+  uint32_t maxSeen = songLastStamp;
   for (uint8_t i = 0; i < 7; i++) {
+    if (!keyHeld[i]) continue;
+    if (pressOrder[i] > maxSeen) maxSeen = pressOrder[i];
     if ((suppressMask >> i) & 1) continue;
-    if (keyHeld[i] && pressOrder[i] > bestOrder) {
+    if (pressOrder[i] > bestOrder) {
       bestOrder = pressOrder[i];
       best = i;
     }
   }
-  if (best >= 0) songLastStamp = bestOrder;
+  songLastStamp = maxSeen;  // suppressed presses are dropped, not deferred
   return best;
 }
 
@@ -171,7 +175,7 @@ int songTakeNewPress(uint8_t suppressMask) {
 uint16_t songTickMs() {
   int raw = analogRead(KNOB_PIN);  // 0..1023
   return (uint16_t)(SONG_TICK_MS_SLOW
-                    - (uint32_t)raw * (SONG_TICK_MS_SLOW - SONG_TICK_MS_FAST) / 1024);
+                    - (uint32_t)raw * (SONG_TICK_MS_SLOW - SONG_TICK_MS_FAST) / 1023);
 }
 
 uint16_t songNoteHz(uint8_t noteByte) {
@@ -232,7 +236,7 @@ int songTick(uint32_t now, uint8_t suppressMask) {
 }
 
 // Two quick beeps as toggle feedback. Briefly blocking (~220 ms) — fine for a
-// toy; a combo is being held so no note should be sounding anyway.
+// toy; recovery is via lastFreqWritten = -1 below (a playing song resumes).
 void chirp(uint16_t hz1, uint16_t hz2) {
   tone(BUZZER_PIN, hz1); delay(CHIRP_TONE_MS);
   noTone(BUZZER_PIN);    delay(CHIRP_GAP_MS);

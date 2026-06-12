@@ -85,7 +85,7 @@ const FxDef FX_DEFS[7] = {
 // A song is a PROGMEM byte stream of {note, duration} pairs.
 //   note byte: low 3 bits = scale degree 0..6 into NOTE_HZ (always the major
 //              table), bits 3-4 = absolute octave band 0..3.
-//   duration:  length in ticks; the knob scales tick length (tempo).
+//   duration:  length in ticks; the knob scales tick length (tempo) (must be >= 1 tick; events shorter than SONG_GAP_MS stretch by the gap)
 // Special note bytes: rest, low stomp ("boom"), short high hit ("cha").
 #define SN(deg, oct) ((uint8_t)((deg) | ((oct) << 3)))
 const uint8_t  SONG_REST = 0x7F;
