@@ -81,6 +81,89 @@ const FxDef FX_DEFS[7] = {
   {  400, 2200,  450,  35, FX_LOOP     },  // key 6: robot babble — coarse climbing steps
 };
 
+// ---- Song mode ----
+// A song is a PROGMEM byte stream of {note, duration} pairs.
+//   note byte: low 3 bits = scale degree 0..6 into NOTE_HZ (always the major
+//              table), bits 3-4 = absolute octave band 0..3.
+//   duration:  length in ticks; the knob scales tick length (tempo).
+// Special note bytes: rest, low stomp ("boom"), short high hit ("cha").
+#define SN(deg, oct) ((uint8_t)((deg) | ((oct) << 3)))
+const uint8_t  SONG_REST = 0x7F;
+const uint8_t  SONG_THUD = 0x7E;
+const uint8_t  SONG_CLAP = 0x7D;
+const uint16_t SONG_THUD_HZ = 90;
+const uint16_t SONG_CLAP_HZ = 1568;
+
+const uint16_t SONG_TICK_MS_SLOW = 350;  // knob fully left
+const uint16_t SONG_TICK_MS_FAST = 110;  // knob fully right
+const uint8_t  SONG_GAP_MS = 25;         // articulation gap so repeated notes don't slur
+
+// Key 0: Twinkle Twinkle Little Star (first verse)
+const uint8_t SONG_TWINKLE[] PROGMEM = {
+  SN(0,1),2, SN(0,1),2, SN(4,1),2, SN(4,1),2, SN(5,1),2, SN(5,1),2, SN(4,1),4,
+  SN(3,1),2, SN(3,1),2, SN(2,1),2, SN(2,1),2, SN(1,1),2, SN(1,1),2, SN(0,1),4,
+};
+
+// Key 1: Mary Had a Little Lamb
+const uint8_t SONG_MARY[] PROGMEM = {
+  SN(2,1),2, SN(1,1),2, SN(0,1),2, SN(1,1),2, SN(2,1),2, SN(2,1),2, SN(2,1),4,
+  SN(1,1),2, SN(1,1),2, SN(1,1),4, SN(2,1),2, SN(4,1),2, SN(4,1),4,
+  SN(2,1),2, SN(1,1),2, SN(0,1),2, SN(1,1),2, SN(2,1),2, SN(2,1),2, SN(2,1),2, SN(2,1),2,
+  SN(1,1),2, SN(1,1),2, SN(2,1),2, SN(1,1),2, SN(0,1),8,
+};
+
+// Key 2: Ode to Joy (main theme)
+const uint8_t SONG_ODE[] PROGMEM = {
+  SN(2,1),2, SN(2,1),2, SN(3,1),2, SN(4,1),2, SN(4,1),2, SN(3,1),2, SN(2,1),2, SN(1,1),2,
+  SN(0,1),2, SN(0,1),2, SN(1,1),2, SN(2,1),2, SN(2,1),3, SN(1,1),1, SN(1,1),4,
+  SN(2,1),2, SN(2,1),2, SN(3,1),2, SN(4,1),2, SN(4,1),2, SN(3,1),2, SN(2,1),2, SN(1,1),2,
+  SN(0,1),2, SN(0,1),2, SN(1,1),2, SN(2,1),2, SN(1,1),3, SN(0,1),1, SN(0,1),4,
+};
+
+// Key 3: London Bridge
+const uint8_t SONG_LONDON[] PROGMEM = {
+  SN(4,1),3, SN(5,1),1, SN(4,1),2, SN(3,1),2, SN(2,1),2, SN(3,1),2, SN(4,1),4,
+  SN(1,1),2, SN(2,1),2, SN(3,1),4, SN(2,1),2, SN(3,1),2, SN(4,1),4,
+  SN(4,1),3, SN(5,1),1, SN(4,1),2, SN(3,1),2, SN(2,1),2, SN(3,1),2, SN(4,1),4,
+  SN(1,1),4, SN(4,1),4, SN(2,1),2, SN(0,1),6,
+};
+
+// Key 4: Frere Jacques
+const uint8_t SONG_FRERE[] PROGMEM = {
+  SN(0,1),2, SN(1,1),2, SN(2,1),2, SN(0,1),2,  SN(0,1),2, SN(1,1),2, SN(2,1),2, SN(0,1),2,
+  SN(2,1),2, SN(3,1),2, SN(4,1),4,             SN(2,1),2, SN(3,1),2, SN(4,1),4,
+  SN(4,1),1, SN(5,1),1, SN(4,1),1, SN(3,1),1,  SN(2,1),2, SN(0,1),2,
+  SN(4,1),1, SN(5,1),1, SN(4,1),1, SN(3,1),1,  SN(2,1),2, SN(0,1),2,
+  SN(0,1),2, SN(4,0),2, SN(0,1),4,             SN(0,1),2, SN(4,0),2, SN(0,1),4,
+};
+
+// Key 5: Smoke on the Water (main riff, transposed to B so the 0/+3/+5/+6
+// semitone shape lands entirely on white keys: B-D-E | B-D-F-E | B-D-E | D-B)
+const uint8_t SONG_SMOKE[] PROGMEM = {
+  SN(6,0),2, SN(1,1),2, SN(2,1),3, SONG_REST,1,
+  SN(6,0),2, SN(1,1),2, SN(3,1),1, SN(2,1),4, SONG_REST,2,
+  SN(6,0),2, SN(1,1),2, SN(2,1),3, SONG_REST,1,
+  SN(1,1),2, SN(6,0),6,
+};
+
+// Key 6: We Will Rock You (stomp-stomp-clap + chant hook)
+const uint8_t SONG_ROCKYOU[] PROGMEM = {
+  SONG_THUD,2, SONG_THUD,2, SONG_CLAP,2, SONG_REST,2,
+  SONG_THUD,2, SONG_THUD,2, SONG_CLAP,2, SONG_REST,2,
+  SN(2,1),2, SN(2,1),2, SN(1,1),2, SN(1,1),2, SN(0,1),3, SONG_REST,1, SN(0,1),4,
+  SONG_THUD,2, SONG_THUD,2, SONG_CLAP,2, SONG_REST,2,
+  SONG_THUD,2, SONG_THUD,2, SONG_CLAP,2, SONG_REST,2,
+};
+
+const uint8_t* const SONGS[7] PROGMEM = {
+  SONG_TWINKLE, SONG_MARY, SONG_ODE, SONG_LONDON, SONG_FRERE, SONG_SMOKE, SONG_ROCKYOU,
+};
+const uint8_t SONG_LEN[7] = {  // number of {note, duration} pairs per song
+  sizeof(SONG_TWINKLE) / 2, sizeof(SONG_MARY) / 2,  sizeof(SONG_ODE) / 2,
+  sizeof(SONG_LONDON) / 2,  sizeof(SONG_FRERE) / 2, sizeof(SONG_SMOKE) / 2,
+  sizeof(SONG_ROCKYOU) / 2,
+};
+
 // ---- Debug ----
 #define DEBUG 1   // set to 1 to print state over Serial @115200
 

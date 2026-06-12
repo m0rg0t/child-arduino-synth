@@ -143,6 +143,94 @@ int fxTick(int activeKey, uint32_t now) {
   return (int)fxHz;
 }
 
+// ---- Song player (MODE_SONG) ----
+int8_t   songKey = -1;            // -1 = stopped
+uint8_t  songPos = 0;             // current {note,duration} pair
+bool     songInGap = false;       // articulation gap at the end of a note
+uint16_t songFreq = 0;            // 0 = rest
+uint32_t songPhaseStartMs = 0;    // when the current sound/gap phase began
+uint32_t songPhaseLenMs = 0;      // length of the current phase
+uint32_t songLastStamp = 0;       // pressCounter baseline for new-press detection
+
+// Newest key pressed since the last call (-1 = none); suppressed keys ignored.
+int songTakeNewPress(uint8_t suppressMask) {
+  int best = -1;
+  uint32_t bestOrder = songLastStamp;
+  for (uint8_t i = 0; i < 7; i++) {
+    if ((suppressMask >> i) & 1) continue;
+    if (keyHeld[i] && pressOrder[i] > bestOrder) {
+      bestOrder = pressOrder[i];
+      best = i;
+    }
+  }
+  if (best >= 0) songLastStamp = bestOrder;
+  return best;
+}
+
+// Knob position -> tick length (left = slow, right = fast).
+uint16_t songTickMs() {
+  int raw = analogRead(KNOB_PIN);  // 0..1023
+  return (uint16_t)(SONG_TICK_MS_SLOW
+                    - (uint32_t)raw * (SONG_TICK_MS_SLOW - SONG_TICK_MS_FAST) / 1024);
+}
+
+uint16_t songNoteHz(uint8_t noteByte) {
+  if (noteByte == SONG_REST) return 0;
+  if (noteByte == SONG_THUD) return SONG_THUD_HZ;
+  if (noteByte == SONG_CLAP) return SONG_CLAP_HZ;
+  uint8_t deg = noteByte & 0x07;
+  uint8_t oct = (noteByte >> 3) & 0x03;
+  return (uint16_t)(NOTE_HZ[deg] << oct);  // songs always use the major table
+}
+
+void songLoadEvent(uint32_t now) {
+  const uint8_t *song = (const uint8_t *)pgm_read_ptr(&SONGS[songKey]);
+  uint8_t noteByte = pgm_read_byte(song + 2 * songPos);
+  uint8_t durTicks = pgm_read_byte(song + 2 * songPos + 1);
+  songFreq = songNoteHz(noteByte);
+  uint32_t durMs = (uint32_t)durTicks * songTickMs();
+  songInGap = false;
+  songPhaseStartMs = now;
+  songPhaseLenMs = (durMs > SONG_GAP_MS) ? durMs - SONG_GAP_MS : durMs;
+}
+
+void songStart(uint8_t key, uint32_t now) {
+  songKey = (int8_t)key;
+  songPos = 0;
+  songLoadEvent(now);
+}
+
+void songStop() {
+  songKey = -1;
+}
+
+// Song frequency for this tick (-1 = silence). Same key stops, new key switches.
+int songTick(uint32_t now, uint8_t suppressMask) {
+  int pressed = songTakeNewPress(suppressMask);
+  if (pressed >= 0) {
+    if (pressed == songKey) songStop();
+    else songStart((uint8_t)pressed, now);
+  }
+  if (songKey < 0) return -1;
+
+  if (now - songPhaseStartMs >= songPhaseLenMs) {
+    if (!songInGap) {
+      songInGap = true;
+      songPhaseStartMs = now;
+      songPhaseLenMs = SONG_GAP_MS;
+    } else {
+      songPos++;
+      if (songPos >= SONG_LEN[songKey]) {  // played to the end; stop (no loop)
+        songStop();
+        return -1;
+      }
+      songLoadEvent(now);
+    }
+  }
+  if (songInGap || songFreq == 0) return -1;
+  return (int)songFreq;
+}
+
 // Two quick beeps as toggle feedback. Briefly blocking (~220 ms) — fine for a
 // toy; a combo is being held so no note should be sounding anyway.
 void chirp(uint16_t hz1, uint16_t hz2) {
@@ -161,6 +249,8 @@ void togglePentatonic() { pentatonicOn = !pentatonicOn; chirp(CHIRP_HI_HZ, CHIRP
 void resetEngines() {
   fxKey = -1;
   fxDone = false;
+  songStop();
+  songLastStamp = pressCounter;  // ignore presses from before the mode switch
 }
 
 // k+1 announce beeps. Blocking (<= ~520 ms) like chirp(); acceptable for a toy.
@@ -255,7 +345,9 @@ void loop() {
     case MODE_FX:
       freq = fxTick(note, now);
       break;
-    case MODE_SONG:  // engine lands in Task 4
+    case MODE_SONG:
+      freq = songTick(now, suppress);
+      break;
     case MODE_ECHO:  // engine lands in Task 5
     default:
       break;
