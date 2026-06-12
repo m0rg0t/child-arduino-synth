@@ -63,13 +63,14 @@ enum FxBehavior : uint8_t { FX_ONCE, FX_LOOP, FX_PINGPONG, FX_RETRIG };
 
 struct FxDef {
   uint16_t startHz, endHz;
-  uint16_t stepHz;     // size of each pitch step
+  uint16_t stepHz;     // size of each pitch step (must be >= 1)
   uint8_t  stepMs;     // time between steps
   uint8_t  behavior;   // FxBehavior
 };
 
 const uint16_t FX_RETRIG_GAP_MS = 180;  // pause between bird chirps
 
+// Kept in SRAM (56 B) for simple access; bulky song tables go in PROGMEM instead.
 const FxDef FX_DEFS[7] = {
   {  600, 1200,    8,  10, FX_PINGPONG },  // key 0: siren — slow rise/fall wail
   { 2500,  300,  110,   5, FX_ONCE     },  // key 1: laser zap — fast dive

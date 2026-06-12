@@ -88,14 +88,14 @@ int8_t   fxKey = -1;       // key whose effect is running; -1 = idle
 uint16_t fxHz = 0;
 int8_t   fxDir = 1;        // +1 stepping up, -1 stepping down
 bool     fxDone = false;   // FX_ONCE finished / FX_RETRIG waiting out its gap
-uint32_t fxNextMs = 0;     // next step time; retrigger time while fxDone
+uint32_t fxLastStepMs = 0;  // last step time; completion time while fxDone
 
 void fxStart(uint8_t key, uint32_t now) {
   fxKey  = (int8_t)key;
   fxHz   = FX_DEFS[key].startHz;
   fxDir  = (FX_DEFS[key].endHz >= FX_DEFS[key].startHz) ? 1 : -1;
   fxDone = false;
-  fxNextMs = now + FX_DEFS[key].stepMs;
+  fxLastStepMs = now;
 }
 
 // FX frequency for this tick (-1 = silence). activeKey is last-pressed-wins.
@@ -108,15 +108,15 @@ int fxTick(int activeKey, uint32_t now) {
 
   const FxDef &d = FX_DEFS[fxKey];
   if (fxDone) {
-    if (d.behavior == FX_RETRIG && now >= fxNextMs) {
+    if (d.behavior == FX_RETRIG && now - fxLastStepMs >= FX_RETRIG_GAP_MS) {
       fxStart((uint8_t)fxKey, now);
     } else {
       return -1;
     }
   }
 
-  if (now >= fxNextMs) {
-    fxNextMs = now + d.stepMs;
+  if (now - fxLastStepMs >= d.stepMs) {
+    fxLastStepMs = now;
     int32_t lo = min(d.startHz, d.endHz);
     int32_t hi = max(d.startHz, d.endHz);
     int32_t next = (int32_t)fxHz + (int32_t)fxDir * (int32_t)d.stepHz;
@@ -125,8 +125,7 @@ int fxTick(int activeKey, uint32_t now) {
         case FX_ONCE:
         case FX_RETRIG:
           fxHz = d.endHz;
-          fxDone = true;
-          fxNextMs = now + FX_RETRIG_GAP_MS;  // only consulted by FX_RETRIG
+          fxDone = true;  // FX_RETRIG measures its gap from completion via fxLastStepMs
           break;
         case FX_LOOP:
           fxHz = d.startHz;
