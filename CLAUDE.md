@@ -19,12 +19,15 @@ The sketch lives in `firmware/child_buzzer/` (sketch dir name must match the
 ```bash
 arduino-cli core install arduino:avr                                      # one-time
 arduino-cli compile --fqbn arduino:avr:nano firmware/child_buzzer         # build
-arduino-cli upload  --fqbn arduino:avr:nano -p /dev/cu.usbserial-XXXX firmware/child_buzzer
+arduino-cli upload  --fqbn arduino:avr:nano:cpu=atmega328old -p /dev/cu.usbserial-XXXX firmware/child_buzzer
 arduino-cli monitor -p /dev/cu.usbserial-XXXX -c baudrate=115200          # read DEBUG output
 ```
 
-- **Clone Nanos** (old bootloader) need `--fqbn arduino:avr:nano:cpu=atmega328old`.
-- IDE path: open the `.ino`, Board → Arduino Nano, Processor → ATmega328P, Upload.
+- **This project's Nano is an old-bootloader clone** — always upload with
+  `cpu=atmega328old`; the plain `arduino:avr:nano` FQBN hangs in avrdude sync
+  forever. (Compile works with either.)
+- IDE path: open the `.ino`, Board → Arduino Nano, Processor → ATmega328P
+  ("Old Bootloader"), Upload.
 
 There is **no automated test harness** — verification is the serial `DEBUG`
 output plus the manual smoke-test checklists in
