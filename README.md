@@ -53,9 +53,10 @@ Modes (announced by beep count when you cycle into them):
 2. **FX** — each key is a sound effect: siren, laser, slide whistle, UFO,
    alarm, bird, robot.
 3. **Songs** — each key plays a melody (key 1 = Twinkle Twinkle Little Star,
-   key 2 = Mary Had a Little Lamb, key 3 = Ode to Joy, key 4 = London Bridge,
-   key 5 = Frère Jacques, key 6 = Smoke on the Water, key 7 = We Will Rock You);
-   knob = tempo; press the same key again to stop.
+   key 2 = Mary Had a Little Lamb, key 3 = Ode to Joy, key 4 = Let It Go (chorus
+   hook), key 5 = Let It Go (full: verse → pre-chorus → chorus), key 6 = Smoke
+   on the Water, key 7 = We Will Rock You); knob = tempo; press the same key
+   again to stop.
 4. **Echo** — play something, pause 1.5 s, and the toy parrots it back.
 
 Vibrato works in every mode; pentatonic changes the keyboard notes (Piano and

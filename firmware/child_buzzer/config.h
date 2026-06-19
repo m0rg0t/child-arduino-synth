@@ -120,21 +120,38 @@ const uint8_t SONG_ODE[] PROGMEM = {
   SN(0,1),2, SN(0,1),2, SN(1,1),2, SN(2,1),2, SN(1,1),3, SN(0,1),1, SN(0,1),4,
 };
 
-// Key 3: London Bridge
-const uint8_t SONG_LONDON[] PROGMEM = {
-  SN(4,1),3, SN(5,1),1, SN(4,1),2, SN(3,1),2, SN(2,1),2, SN(3,1),2, SN(4,1),4,
-  SN(1,1),2, SN(2,1),2, SN(3,1),4, SN(2,1),2, SN(3,1),2, SN(4,1),4,
-  SN(4,1),3, SN(5,1),1, SN(4,1),2, SN(3,1),2, SN(2,1),2, SN(3,1),2, SN(4,1),4,
-  SN(1,1),4, SN(4,1),4, SN(2,1),2, SN(0,1),6,
+// Key 3: Let It Go (Frozen) — chorus hook only. Monophonic white-key reduction
+// in C major. The signature rise: the held syllable leaps up to C6 (SN(0,2)),
+// then the figure shifts up a step so the next peak is D6 (SN(1,2)). Resolves
+// on the tonic C. See docs/superpowers/specs/2026-06-18-letitgo-song-design.md.
+const uint8_t SONG_LETITGO_HOOK[] PROGMEM = {
+  SN(4,1),2, SN(4,1),2, SN(0,2),6,  SN(5,1),2, SN(5,1),2, SN(1,2),6,        // rising "let it go" pair
+  SN(0,2),2, SN(6,1),2, SN(5,1),2, SN(4,1),2, SN(5,1),4, SONG_REST,2,       // answer phrase, descending
+  SN(4,1),2, SN(4,1),2, SN(2,1),2, SN(1,1),2, SN(0,1),8,                    // closing line, resolves to C
 };
 
-// Key 4: Frere Jacques
-const uint8_t SONG_FRERE[] PROGMEM = {
-  SN(0,1),2, SN(1,1),2, SN(2,1),2, SN(0,1),2,  SN(0,1),2, SN(1,1),2, SN(2,1),2, SN(0,1),2,
-  SN(2,1),2, SN(3,1),2, SN(4,1),4,             SN(2,1),2, SN(3,1),2, SN(4,1),4,
-  SN(4,1),1, SN(5,1),1, SN(4,1),1, SN(3,1),1,  SN(2,1),2, SN(0,1),2,
-  SN(4,1),1, SN(5,1),1, SN(4,1),1, SN(3,1),1,  SN(2,1),2, SN(0,1),2,
-  SN(0,1),2, SN(4,0),2, SN(0,1),4,             SN(0,1),2, SN(4,0),2, SN(0,1),4,
+// Key 4: Let It Go (Frozen) — full arrangement: verse -> pre-chorus -> chorus,
+// played once. Verse anchored in A natural minor, chorus in its relative
+// C major; both sit on white keys so the whole tune needs no accidentals (the
+// format has none). Verse low (band 1), chorus lifts to bands 1-2.
+const uint8_t SONG_LETITGO[] PROGMEM = {
+  // verse
+  SN(2,1),4, SN(2,1),2, SN(3,1),2, SN(2,1),2, SN(1,1),2, SN(0,1),4,        // A-minor phrase 1
+  SN(1,1),2, SN(1,1),2, SN(2,1),2, SN(3,1),2, SN(2,1),6,                   // phrase 2
+  SN(2,1),4, SN(2,1),2, SN(3,1),2, SN(4,1),2, SN(2,1),2, SN(1,1),4,        // phrase 3 (reaches up to G)
+  SN(0,1),2, SN(1,1),2, SN(2,1),2, SN(1,1),2, SN(5,0),6,                   // phrase 4, settles low on A
+  // pre-chorus (rising build into the chorus register)
+  SN(5,0),2, SN(0,1),2, SN(1,1),2, SN(2,1),2, SN(3,1),4,
+  SN(2,1),2, SN(3,1),2, SN(4,1),2, SN(5,1),2, SN(4,1),4,
+  SN(4,1),2, SN(5,1),2, SN(6,1),2, SN(0,2),4, SONG_REST,2,                 // lift onto high C
+  // chorus
+  SN(4,1),2, SN(4,1),2, SN(0,2),6,  SN(5,1),2, SN(5,1),2, SN(1,2),6,       // rising "let it go" pair
+  SN(0,2),2, SN(6,1),2, SN(5,1),2, SN(4,1),2, SN(5,1),4, SONG_REST,2,      // answer 1, descending
+  SN(4,1),2, SN(4,1),2, SN(0,2),6,  SN(5,1),2, SN(5,1),2, SN(1,2),6,       // rising pair again
+  SN(0,2),2, SN(6,1),2, SN(5,1),2, SN(4,1),2, SN(0,1),4, SONG_REST,2,      // answer 2
+  SN(4,1),2, SN(5,1),2, SN(6,1),2, SN(0,2),2, SN(6,1),2, SN(5,1),2, SN(4,1),4,  // bridge-up line
+  SN(5,1),2, SN(4,1),2, SN(2,1),4, SONG_REST,2,                            // short tag
+  SN(4,1),2, SN(4,1),2, SN(2,1),2, SN(1,1),2, SN(0,1),8,                   // closing line, resolves to C
 };
 
 // Key 5: Smoke on the Water (main riff, transposed to B so the 0/+3/+5/+6
@@ -156,11 +173,11 @@ const uint8_t SONG_ROCKYOU[] PROGMEM = {
 };
 
 const uint8_t* const SONGS[7] PROGMEM = {
-  SONG_TWINKLE, SONG_MARY, SONG_ODE, SONG_LONDON, SONG_FRERE, SONG_SMOKE, SONG_ROCKYOU,
+  SONG_TWINKLE, SONG_MARY, SONG_ODE, SONG_LETITGO_HOOK, SONG_LETITGO, SONG_SMOKE, SONG_ROCKYOU,
 };
 const uint8_t SONG_LEN[7] = {  // number of {note, duration} pairs per song
-  sizeof(SONG_TWINKLE) / 2, sizeof(SONG_MARY) / 2,  sizeof(SONG_ODE) / 2,
-  sizeof(SONG_LONDON) / 2,  sizeof(SONG_FRERE) / 2, sizeof(SONG_SMOKE) / 2,
+  sizeof(SONG_TWINKLE) / 2,      sizeof(SONG_MARY) / 2,    sizeof(SONG_ODE) / 2,
+  sizeof(SONG_LETITGO_HOOK) / 2, sizeof(SONG_LETITGO) / 2, sizeof(SONG_SMOKE) / 2,
   sizeof(SONG_ROCKYOU) / 2,
 };
 

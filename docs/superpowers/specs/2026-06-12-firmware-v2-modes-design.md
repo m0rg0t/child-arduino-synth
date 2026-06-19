@@ -117,8 +117,8 @@ Song list (key 0 → 6):
 1. Twinkle Twinkle Little Star
 2. Mary Had a Little Lamb
 3. Ode to Joy
-4. London Bridge
-5. Frère Jacques
+4. Let It Go — chorus hook (see 2026-06-18-letitgo-song-design.md)
+5. Let It Go — full: verse → pre-chorus → chorus
 6. Smoke on the Water (main riff)
 7. We Will Rock You (chant hook; the stomp-stomp-clap rendered as low
    ~80–110 Hz thuds)
