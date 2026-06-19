@@ -527,17 +527,17 @@ const uint8_t SONG_FRERE[] PROGMEM = {
   SN(0,1),2, SN(4,0),2, SN(0,1),4,             SN(0,1),2, SN(4,0),2, SN(0,1),4,
 };
 
-// Key 5: Smoke on the Water (main riff, transposed to B so the 0/+3/+5/+6
+// Key 5: classic hard-rock four-note riff, transposed to B so the 0/+3/+5/+6
 // semitone shape lands entirely on white keys: B-D-E | B-D-F-E | B-D-E | D-B)
-const uint8_t SONG_SMOKE[] PROGMEM = {
+const uint8_t SONG_RIFF[] PROGMEM = {
   SN(6,0),2, SN(1,1),2, SN(2,1),3, SONG_REST,1,
   SN(6,0),2, SN(1,1),2, SN(3,1),1, SN(2,1),4, SONG_REST,2,
   SN(6,0),2, SN(1,1),2, SN(2,1),3, SONG_REST,1,
   SN(1,1),2, SN(6,0),6,
 };
 
-// Key 6: We Will Rock You (stomp-stomp-clap + chant hook)
-const uint8_t SONG_ROCKYOU[] PROGMEM = {
+// Key 6: stadium stomp-stomp-clap + chant hook
+const uint8_t SONG_STOMP[] PROGMEM = {
   SONG_THUD,2, SONG_THUD,2, SONG_CLAP,2, SONG_REST,2,
   SONG_THUD,2, SONG_THUD,2, SONG_CLAP,2, SONG_REST,2,
   SN(2,1),2, SN(2,1),2, SN(1,1),2, SN(1,1),2, SN(0,1),3, SONG_REST,1, SN(0,1),4,
@@ -546,12 +546,12 @@ const uint8_t SONG_ROCKYOU[] PROGMEM = {
 };
 
 const uint8_t* const SONGS[7] PROGMEM = {
-  SONG_TWINKLE, SONG_MARY, SONG_ODE, SONG_LONDON, SONG_FRERE, SONG_SMOKE, SONG_ROCKYOU,
+  SONG_TWINKLE, SONG_MARY, SONG_ODE, SONG_LONDON, SONG_FRERE, SONG_RIFF, SONG_STOMP,
 };
 const uint8_t SONG_LEN[7] = {  // number of {note, duration} pairs per song
   sizeof(SONG_TWINKLE) / 2, sizeof(SONG_MARY) / 2,  sizeof(SONG_ODE) / 2,
-  sizeof(SONG_LONDON) / 2,  sizeof(SONG_FRERE) / 2, sizeof(SONG_SMOKE) / 2,
-  sizeof(SONG_ROCKYOU) / 2,
+  sizeof(SONG_LONDON) / 2,  sizeof(SONG_FRERE) / 2, sizeof(SONG_RIFF) / 2,
+  sizeof(SONG_STOMP) / 2,
 };
 ```
 
@@ -675,7 +675,7 @@ git add firmware/child_buzzer/config.h firmware/child_buzzer/child_buzzer.ino
 git commit -m "feat(fw): song mode — 7 PROGMEM melodies, knob controls tempo"
 ```
 
-Hardware smoke check: cycle to song mode (3 beeps). Each key starts its melody; same key stops; different key switches; the knob audibly changes tempo; key 5 is a recognizable Smoke on the Water; key 6 does boom-boom-cha.
+Hardware smoke check: cycle to song mode (3 beeps). Each key starts its melody; same key stops; different key switches; the knob audibly changes tempo; key 5 is a recognizable hard-rock riff; key 6 does boom-boom-cha.
 
 ---
 
@@ -856,8 +856,8 @@ Modes (announced by beep count):
 2. **FX** — each key is a sound effect: siren, laser, slide whistle, UFO,
    alarm, bird, robot.
 3. **Songs** — each key plays a melody (Twinkle Twinkle, Mary Had a Little
-   Lamb, Ode to Joy, London Bridge, Frère Jacques, Smoke on the Water,
-   We Will Rock You); knob = tempo; same key stops.
+   Lamb, Ode to Joy, London Bridge, Frère Jacques, a hard-rock riff,
+   a stadium stomp-and-chant); knob = tempo; same key stops.
 4. **Echo** — play something, pause 1.5 s, and the toy parrots it back.
 
 Vibrato and pentatonic work in every mode.

@@ -117,13 +117,13 @@ Song list (key 0 → 6):
 1. Twinkle Twinkle Little Star
 2. Mary Had a Little Lamb
 3. Ode to Joy
-4. Let It Go — chorus hook (see 2026-06-18-letitgo-song-design.md)
-5. Let It Go — full: verse → pre-chorus → chorus
-6. Smoke on the Water (main riff)
-7. We Will Rock You (chant hook; the stomp-stomp-clap rendered as low
+4. Pop-ballad chorus hook (see 2026-06-18-pop-ballad-song-design.md)
+5. Full pop ballad — verse → pre-chorus → chorus
+6. Hard-rock riff (the classic four-note figure)
+7. Stadium stomp-and-chant hook (the stomp-stomp-clap rendered as low
    ~80–110 Hz thuds)
 
-Note on Smoke on the Water: the riff's intervals (0, +3, +5, +6 semitones)
+Note on the hard-rock riff: its intervals (0, +3, +5, +6 semitones)
 are not playable from G in C major, but transposed to start on **B** they
 land entirely on white keys: B–D–E | B–D–F–E | B–D–E | D–B. The
 scale-degree encoding therefore needs no accidentals.
@@ -197,7 +197,7 @@ Extend the `DEBUG` serial line with `mode=`. Smoke-test checklist:
 3. Hold 2+4 → 2 beeps → FX mode; each key produces its distinct effect;
    release silences; ONCE effects don't loop.
 4. Hold 2+4 → 3 beeps → song mode; each key starts its song; same key stops;
-   different key switches; knob audibly changes tempo; Smoke on the Water
+   different key switches; knob audibly changes tempo; hard-rock
    riff recognizable.
 5. Hold 2+4 → 4 beeps → echo mode; play a short phrase, wait ~1.5 s, hear it
    parroted back with timing; playing during replay interrupts it.
