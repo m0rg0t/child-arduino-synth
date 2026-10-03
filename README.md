@@ -13,6 +13,25 @@ Design spec: `docs/superpowers/specs/`. Wiring: `WIRING.md`. Enclosure models:
 - Tunables (pins, note table, octaves, timings, vibrato, DEBUG):
   `firmware/child_buzzer/config.h`
 
+### Automated checks (no hardware)
+
+Run `bash tests/run.sh` with a C++17 compiler (GCC or Clang). The harness
+includes the production `.ino` and replaces only Arduino pin, clock, Serial,
+and tone APIs with deterministic fakes. Undefined-behavior sanitizer checks
+are enabled. Tests cover debounce/bounce, key priority and release, tone write
+suppression, combo thresholds/rearming, 32-bit clock rollover, and octave and
+vibrato bounds.
+The v2 suite also covers all gestures, mode reset, FX bounds, song tables and
+controls, and Echo capacity, duration clamping, interruption and press-time octave capture.
+The suite preserves v2 behavior, including the recorded octave staying fixed
+when the knob moves during playback.
+
+The read-only PR workflow runs these tests and compiles both Nano bootloader
+profiles with Arduino CLI 1.5.1 and Arduino AVR core 1.8.8. It never uploads,
+flashes, releases or deploys. Host tests do not model AVR memory placement,
+physical debounce, timer/audio behavior, or wiring; the AVR compile catches
+build and flash/SRAM limits, while acoustic acceptance still needs hardware.
+
 ### Flashing with the Arduino IDE
 
 1. Open `firmware/child_buzzer/child_buzzer.ino`.
@@ -24,7 +43,7 @@ Design spec: `docs/superpowers/specs/`. Wiring: `WIRING.md`. Enclosure models:
 ### Flashing with arduino-cli
 
 ```bash
-arduino-cli core install arduino:avr
+arduino-cli core install arduino:avr@1.8.8
 arduino-cli compile --fqbn arduino:avr:nano firmware/child_buzzer
 arduino-cli upload  --fqbn arduino:avr:nano:cpu=atmega328old -p /dev/cu.usbserial-XXXX firmware/child_buzzer
 # Genuine Nanos (new bootloader): drop the :cpu=atmega328old suffix. Clone
