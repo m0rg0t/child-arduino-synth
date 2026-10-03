@@ -17,7 +17,7 @@ The sketch lives in `firmware/child_buzzer/` (sketch dir name must match the
 `.ino` for the Arduino toolchain).
 
 ```bash
-arduino-cli core install arduino:avr                                      # one-time
+arduino-cli core install arduino:avr@1.8.8                                      # one-time
 arduino-cli compile --fqbn arduino:avr:nano firmware/child_buzzer         # build
 arduino-cli upload  --fqbn arduino:avr:nano:cpu=atmega328old -p /dev/cu.usbserial-XXXX firmware/child_buzzer
 arduino-cli monitor -p /dev/cu.usbserial-XXXX -c baudrate=115200          # read DEBUG output
@@ -29,8 +29,10 @@ arduino-cli monitor -p /dev/cu.usbserial-XXXX -c baudrate=115200          # read
 - IDE path: open the `.ino`, Board → Arduino Nano, Processor → ATmega328P
   ("Old Bootloader"), Upload.
 
-There is **no automated test harness** — verification is the serial `DEBUG`
-output plus the manual smoke-test checklists in
+Run `bash tests/run.sh` for the actual-sketch host regression suite (C++17
+compiler required). Read-only CI also compiles both Nano bootloader profiles
+with Arduino CLI 1.5.1 / AVR core 1.8.8. Physical verification still uses serial
+`DEBUG` output plus the manual smoke-test checklists in
 `docs/superpowers/specs/2026-06-03-child-buzzer-synth-design.md` (v1) and
 `docs/superpowers/specs/2026-06-12-firmware-v2-modes-design.md` (v2 modes).
 `DEBUG` is a

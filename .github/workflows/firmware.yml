@@ -1,0 +1,40 @@
+name: Firmware checks
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  host:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Test the actual sketch with fake hardware and UBSan
+        run: bash tests/run.sh
+  nano:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        cpu: [atmega328, atmega328old]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install checksum-verified Arduino CLI 1.5.1
+        run: |
+          curl --fail --location --retry 3 https://github.com/arduino/arduino-cli/releases/download/v1.5.1/arduino-cli_1.5.1_Linux_64bit.tar.gz -o "$RUNNER_TEMP/arduino-cli.tar.gz"
+          echo "28a8e119c498a25607821c36cb2dc49e8463941b261a0d99091baa7bc692dd2b  $RUNNER_TEMP/arduino-cli.tar.gz" | sha256sum --check
+          mkdir -p "$RUNNER_TEMP/arduino-bin"
+          tar -xzf "$RUNNER_TEMP/arduino-cli.tar.gz" -C "$RUNNER_TEMP/arduino-bin" arduino-cli
+          echo "$RUNNER_TEMP/arduino-bin" >> "$GITHUB_PATH"
+      - name: Install the pinned AVR core
+        run: |
+          arduino-cli core update-index
+          arduino-cli core install arduino:avr@1.8.8
+      - name: Compile only (no upload or device access)
+        run: arduino-cli compile --fqbn arduino:avr:nano:cpu=${{ matrix.cpu }} firmware/child_buzzer
